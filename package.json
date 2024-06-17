@@ -1,0 +1,38 @@
+{
+  "name": "@glitchjsy/data-fetcher",
+  "version": "1.0.0",
+  "description": "Data fetcher for Open Data",
+  "author": "Luke <luke@glitch.je>",
+  "license": "MIT",
+  "main": "dist/src/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node .",
+    "dev:start": "npm-run-all build start",
+    "dev": "nodemon --watch src -e ts,ejs --exec npm run dev:start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/glitchjsy/data-fetcher.git"
+  },
+  "keywords": [
+    "opendata",
+    "open-data",
+    "jersey",
+    "gov.je"
+  ],
+  "dependencies": {
+    "chalk": "4.0.0",
+    "cron": "^3.1.7",
+    "mysql2": "^3.10.1",
+    "node-fetch": "2.0.0",
+    "redis": "^4.6.14"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.2",
+    "@types/node-fetch": "^2.6.11",
+    "@types/redis": "^4.0.11",
+    "typescript": "^4.6.3"
+  }
+}
