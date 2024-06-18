@@ -72,7 +72,7 @@ class FetchProductRecallsTask extends Task<number> {
                 const data = {
                     id: parseInt(result.id),
                     title: $(".title").text(),
-                    imageUrl: $(".item > img").length === 0 ? null : "https://gov.je/" + $(".item > img").attr("src"),
+                    imageUrl: $(".item > img").length === 0 ? null : "https://gov.je" + $(".item > img").attr("src"),
                     brand: tableData.Brand,
                     recallDate: new Date(Date.parse(tableData["Recall date"].replace(/(\d{2}) (\w{3}) (\d{4})/, '$2 $1, $3'))),
                     packSize: tableData["Pack size"] === "" ? null : tableData["Pack size"],
