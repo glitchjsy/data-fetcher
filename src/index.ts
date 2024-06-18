@@ -5,6 +5,7 @@ import { TASKS } from "./registry";
 import { fetchParkingSpaces } from "./tasks/FetchParkingSpacesTask";
 import { CronJob } from "cron";
 import config from "../config.json";
+import { fetchProductRecalls } from "./tasks/FetchProductRecallsTask";
 
 log.info("Starting data-fetcher");
 
@@ -15,6 +16,14 @@ TASKS.forEach(task => log.info("Loaded task " + task.name));
  * in the database.
  */
 async function registerCronJobs() {
+    // every hour
+    new CronJob("0 * * * *", () => {
+        fetchProductRecalls()
+            .then(async (totalRecalls) => {
+                log.debug(`Fetched data on ${totalRecalls} product recalls...`);
+            });
+    }).start();
+
     // every 5 minutes
     new CronJob("*/5 * * * *", () => {
         // Fetch parking spaces and update them in the database
