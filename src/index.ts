@@ -6,6 +6,7 @@ import { fetchParkingSpaces } from "./tasks/FetchParkingSpacesTask";
 import { CronJob } from "cron";
 import config from "../config.json";
 import { fetchProductRecalls } from "./tasks/FetchProductRecallsTask";
+import { fetchEatSafeRatings } from "./tasks/FetchEatSafeDataTask";
 
 log.info("Starting data-fetcher");
 
@@ -22,6 +23,13 @@ async function registerCronJobs() {
             .then(async (totalRecalls) => {
                 log.debug(`Fetched data on ${totalRecalls} product recalls...`);
             });
+
+        fetchEatSafeRatings()
+            .then(async (ratings) => {
+                log.debug(`Fetched eatsafe data on ${ratings.length} businesses...`);
+
+                await redis.setAsync("data-eatsafe:json", JSON.stringify(ratings));
+            }).catch(e => log.error("Failed to fetch eatsafe ratings: " + e.message));
     }).start();
 
     // every 5 minutes
