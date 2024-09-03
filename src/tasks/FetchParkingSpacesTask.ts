@@ -61,8 +61,9 @@ class FetchParkingSpacesTask extends Task<ParkingSpacesWrapper> {
         const month = months.indexOf(parts[9]) + 1;
 
         const displayMonth = month < 10 ? "0" + month : month;
+        const displayDate = parseInt(date) < 10 ? "0" + date : date;
 
-        return new Date(`${new Date().getFullYear()}-${displayMonth}-${date}:${time}`);
+        return new Date(`${new Date().getFullYear()}-${displayMonth}-${displayDate}T${time}Z`);
     }
 }
 
