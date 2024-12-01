@@ -24,12 +24,13 @@ async function registerCronJobs() {
                 log.debug(`Fetched data on ${totalRecalls} product recalls...`);
             });
 
-        fetchEatSafeRatings()
-            .then(async (ratings) => {
-                log.debug(`Fetched eatsafe data on ${ratings.length} businesses...`);
+        // Disable this for now as it eats up mapbox api tokens
+        // fetchEatSafeRatings()
+        //     .then(async (ratings) => {
+        //         log.debug(`Fetched eatsafe data on ${ratings.length} businesses...`);
 
-                await redis.setAsync("data-eatsafe:json", JSON.stringify(ratings));
-            }).catch(e => log.error("Failed to fetch eatsafe ratings: " + e.message));
+        //         await redis.setAsync("data-eatsafe:json", JSON.stringify(ratings));
+        //     }).catch(e => log.error("Failed to fetch eatsafe ratings: " + e.message));
     }).start();
 
     // every 5 minutes
