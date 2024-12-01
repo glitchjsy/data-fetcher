@@ -72,7 +72,7 @@ class FetchEatSafeDataTask extends Task<EatSafeRating[]> {
         return nodeFetch(DATA_URL)
             .then(validateResponse)
             .then(transform)
-            .then(fetchCoordinates);
+            // .then(fetchCoordinates); - Temporarily disabled until mapbox account issues are sorted
     }
 
 
