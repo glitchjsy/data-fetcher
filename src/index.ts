@@ -6,6 +6,7 @@ import { TASKS } from "./registry";
 import { fetchEatSafeRatings } from "./tasks/FetchEatSafeDataTask";
 import { fetchParkingSpaces } from "./tasks/FetchParkingSpacesTask";
 import { fetchProductRecalls } from "./tasks/FetchProductRecallsTask";
+import { fetchCLSQueues } from "./tasks/FetchCLSQueuesTask";
 
 log.info("Starting data-fetcher");
 
@@ -50,6 +51,29 @@ function fetchEatSafeRatingsTask() {
         }).catch(e => log.error("Failed to fetch eatsafe ratings: " + e.message));
 }
 
+function fetchCLSQueuesTask() {
+    fetchCLSQueues()
+        .then(async ({ queues, timestamp }) => {
+            log.debug(`Fetched cls queues data...`);
+
+            await redis.setAsync("data-clsqueues:json", JSON.stringify({ results: queues, timestamp }));
+
+            for (const queue of queues) {
+                await mysql.execute("INSERT INTO liveClsQueuesData (createdAt,name,queueId,color,open,waiting,waitingMinutes) VALUES (?,?,?,?,?,?,?)", [
+                    timestamp,
+                    queue.name,
+                    queue.queueId,
+                    queue.color,
+                    queue.open,
+                    queue.waiting,
+                    queue.waitingMinutes
+                ]);
+            }
+            log.debug("Updated in database");
+        })
+        .catch(e => log.error("Failed to fetch cls queues data: " + e.message));
+}
+
 /**
  * Registers cron jobs to periodically fetch data and update it
  * in the database.
@@ -59,11 +83,13 @@ async function registerCronJobs() {
     fetchParkingSpacesTask();
     fetchEatSafeRatingsTask();
     fetchProductRecallsTask();
+    fetchCLSQueuesTask();
 
     // Then set up cron jobs to run periodically
-    new CronJob("0 * * * *", () => fetchParkingSpacesTask()).start(); // every hour
+    new CronJob("0 * * * *", () => fetchProductRecallsTask()).start(); // every hour
     new CronJob("0 0 */2 * *", () => fetchEatSafeRatingsTask()).start(); // every 2 days
-    new CronJob("*/5 * * * *", () => fetchProductRecallsTask()).start(); // every 5 minutes
+    new CronJob("*/5 * * * *", () => fetchParkingSpacesTask()).start(); // every 5 minutes
+    new CronJob("*/5 * * * *", () => fetchCLSQueuesTask()).start(); // every 5 minutes
 }
 
 registerCronJobs();
