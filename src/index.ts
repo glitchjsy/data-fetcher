@@ -7,8 +7,6 @@ import { fetchEatSafeRatings } from "./tasks/FetchEatSafeDataTask";
 import { fetchParkingSpaces } from "./tasks/FetchParkingSpacesTask";
 import { fetchProductRecalls } from "./tasks/FetchProductRecallsTask";
 import { fetchCLSQueues } from "./tasks/FetchCLSQueuesTask";
-import toilets from "../toilets.json";
-import recycling from "../recycling.json";
 
 log.info("Starting data-fetcher");
 
@@ -77,6 +75,14 @@ function fetchCLSQueuesTask() {
 }
 
 /**
+ * Update the heartbeat time in redis for status checking.
+ */
+async function heartbeat() {
+    log.debug("Heatbeat sent");
+    await redis.setAsync("data-fetcher-heartbeat", Date.now().toString());
+}
+
+/**
  * Registers cron jobs to periodically fetch data and update it
  * in the database.
  */
@@ -92,6 +98,10 @@ async function registerCronJobs() {
     new CronJob("0 0 */2 * *", () => fetchEatSafeRatingsTask()).start(); // every 2 days
     new CronJob("*/5 * * * *", () => fetchParkingSpacesTask()).start(); // every 5 minutes
     new CronJob("*/5 * * * *", () => fetchCLSQueuesTask()).start(); // every 5 minutes
+
+    // Heartbeat
+    heartbeat();
+    new CronJob("*/1 * * * *", () => heartbeat()).start(); // every minute
 }
 
 registerCronJobs();
