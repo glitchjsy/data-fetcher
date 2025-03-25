@@ -7,6 +7,8 @@ import { fetchEatSafeRatings } from "./tasks/FetchEatSafeDataTask";
 import { fetchParkingSpaces } from "./tasks/FetchParkingSpacesTask";
 import { fetchProductRecalls } from "./tasks/FetchProductRecallsTask";
 import { fetchCLSQueues } from "./tasks/FetchCLSQueuesTask";
+import toilets from "../toilets.json";
+import recycling from "../recycling.json";
 
 log.info("Starting data-fetcher");
 
@@ -86,7 +88,7 @@ async function registerCronJobs() {
     fetchCLSQueuesTask();
 
     // Then set up cron jobs to run periodically
-    new CronJob("0 * * * *", () => fetchProductRecallsTask()).start(); // every hour
+    new CronJob("0 */6 * * *", () => fetchProductRecallsTask()).start(); // every 6 hours
     new CronJob("0 0 */2 * *", () => fetchEatSafeRatingsTask()).start(); // every 2 days
     new CronJob("*/5 * * * *", () => fetchParkingSpacesTask()).start(); // every 5 minutes
     new CronJob("*/5 * * * *", () => fetchCLSQueuesTask()).start(); // every 5 minutes

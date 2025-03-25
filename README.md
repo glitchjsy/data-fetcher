@@ -14,3 +14,6 @@ Fetches eat safe ratings and finds the latitude and longitude based on the addre
 Fetches parking space information and then:
   1. Saves the data in redis
   2. Stores basic information in mysql to allow tracking available spaces over time
+
+* **Customer & Local Services Queue Times**
+Fetches queue information for C&LS and saves the data in redis and MySQL for tracking over time.
