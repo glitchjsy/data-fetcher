@@ -4,8 +4,9 @@ import log from "../log";
 import { EatSafeRating } from "../models/data/EatSafeRatings";
 import { GovEatSafeRating } from "../models/gov/GovEatSafeRatings";
 import Task from "./Task";
+import config from "../../config.json";
 
-const geocodingClient = MapboxClient({ accessToken: "pk.eyJ1IjoibHVrZWVleWRldiIsImEiOiJjbHI4cjV3MGswYjYzMmp0M3lnaGllcHZhIn0.rBFyu08FWcUHQ2S7YSN0zg" });
+const geocodingClient = MapboxClient({ accessToken: config.mapboxToken });
 const DATA_URL = "https://sojopendata.azurewebsites.net/eatsafe/json";
 
 class FetchEatSafeDataTask extends Task<EatSafeRating[]> {
@@ -72,7 +73,7 @@ class FetchEatSafeDataTask extends Task<EatSafeRating[]> {
         return nodeFetch(DATA_URL)
             .then(validateResponse)
             .then(transform)
-            // .then(fetchCoordinates); - Temporarily disabled until mapbox account issues are sorted
+            .then(fetchCoordinates);
     }
 
 

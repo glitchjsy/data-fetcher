@@ -5,5 +5,6 @@
         "user": "root",
         "password": "password123",
         "database": "opendata"
-    }
+    },
+    "mapboxToken": "pk.eyJ1IjoiZ2xpdGNoanN5IiwiYSI6ImNtOG9jZm92MjAweXYydHNjdXhnMXVlaGkifQ.x4Q8BUqZ7tdR_7ErvOqCzw"
 }
