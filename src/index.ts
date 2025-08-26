@@ -18,19 +18,23 @@ function fetchParkingSpacesTask() {
         .then(async ({ carparks, timestamp }) => {
             log.debug(`Fetched data on ${carparks.length} carparks...`);
 
-            await redis.setAsync("data-livespaces:json", JSON.stringify({ results: carparks, timestamp }));
+            try {
+                await redis.setAsync("data-livespaces:json", JSON.stringify({ results: carparks, timestamp }));
 
-            for (const carpark of carparks) {
-                await mysql.execute("INSERT INTO liveParkingSpaces (createdAt,name,code,spaces,status,open) VALUES (?,?,?,?,?,?)", [
-                    timestamp,
-                    carpark.name,
-                    carpark.code,
-                    carpark.spaces,
-                    carpark.status,
-                    carpark.open
-                ]);
+                for (const carpark of carparks) {
+                    await mysql.execute("INSERT INTO liveParkingSpaces (createdAt,name,code,spaces,status,open) VALUES (?,?,?,?,?,?)", [
+                        timestamp,
+                        carpark.name,
+                        carpark.code,
+                        carpark.spaces,
+                        carpark.status,
+                        carpark.open
+                    ]);
+                }
+                log.debug("Updated in database");
+            } catch (e: any) {
+                log.error("Failed to update parking spaces in database: " + e.message);
             }
-            log.debug("Updated in database");
         })
         .catch(e => log.error("Failed to fetch parking spaces: " + e.message));
 }
@@ -47,7 +51,11 @@ function fetchEatSafeRatingsTask() {
         .then(async (ratings) => {
             log.debug(`Fetched eatsafe data on ${ratings.length} businesses...`);
 
-            await redis.setAsync("data-eatsafe:json", JSON.stringify(ratings));
+            try {
+                await redis.setAsync("data-eatsafe:json", JSON.stringify(ratings));
+            } catch (e: any) {
+                log.error("Failed to update eatsafe ratings in database: " + e.message);
+            }
         }).catch(e => log.error("Failed to fetch eatsafe ratings: " + e.message));
 }
 
@@ -56,20 +64,24 @@ function fetchCLSQueuesTask() {
         .then(async ({ queues, timestamp }) => {
             log.debug(`Fetched cls queues data...`);
 
-            await redis.setAsync("data-clsqueues:json", JSON.stringify({ results: queues, timestamp }));
+            try {
+                await redis.setAsync("data-clsqueues:json", JSON.stringify({ results: queues, timestamp }));
 
-            for (const queue of queues) {
-                await mysql.execute("INSERT INTO liveClsQueuesData (createdAt,name,queueId,color,open,waiting,waitingMinutes) VALUES (?,?,?,?,?,?,?)", [
-                    timestamp,
-                    queue.name,
-                    queue.queueId,
-                    queue.color,
-                    queue.open,
-                    queue.waiting,
-                    queue.waitingMinutes
-                ]);
+                for (const queue of queues) {
+                    await mysql.execute("INSERT INTO liveClsQueuesData (createdAt,name,queueId,color,open,waiting,waitingMinutes) VALUES (?,?,?,?,?,?,?)", [
+                        timestamp,
+                        queue.name,
+                        queue.queueId,
+                        queue.color,
+                        queue.open,
+                        queue.waiting,
+                        queue.waitingMinutes
+                    ]);
+                }
+                log.debug("Updated in database");
+            } catch (e: any) {
+                log.error("Failed to update cls queues in database: " + e.message);
             }
-            log.debug("Updated in database");
         })
         .catch(e => log.error("Failed to fetch cls queues data: " + e.message));
 }
@@ -79,7 +91,11 @@ function fetchCLSQueuesTask() {
  */
 async function heartbeat() {
     log.debug("Heatbeat sent");
-    await redis.setAsync("data-fetcher-heartbeat", Date.now().toString());
+    try {
+        await redis.setAsync("data-fetcher-heartbeat", Date.now().toString());
+    } catch (e: any) {
+        log.error("Failed to update heartbeat in redis: " + e.message);
+    }
 }
 
 /**
