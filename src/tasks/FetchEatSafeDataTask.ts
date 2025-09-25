@@ -55,7 +55,7 @@ class FetchEatSafeDataTask extends Task<EatSafeRating[]> {
 
                     if (response && response.body && response.body.features && response.body.features.length > 0) {
                         const { center } = response.body.features[0];
-                        
+
                         rating.latitude = center[1];
                         rating.longitude = center[0];
 

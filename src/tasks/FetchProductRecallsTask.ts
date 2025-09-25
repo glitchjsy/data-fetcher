@@ -1,11 +1,9 @@
-import nodeFetch, { Response } from "node-fetch";
 import { load } from "cheerio";
+import nodeFetch, { Response } from "node-fetch";
 import log from "../log";
-import { ParkingSpaces, ParkingSpacesWrapper } from "../models/data/ParkingSpaces";
-import { GovParkingSpacesWrapper } from "../models/gov/GovParkingSpaces";
-import Task from "./Task";
-import { ProductRecall, ProductRecallsWrapper } from "../models/data/ProductRecalls";
+import { ProductRecall } from "../models/data/ProductRecalls";
 import mysql from "../mysql";
+import Task from "./Task";
 
 const DATA_URL = "https://www.gov.je/stayingsafe/consumerprotection/productsafety/Pages/ProductRecalls.aspx";
 

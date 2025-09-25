@@ -1,9 +1,8 @@
 import nodeFetch, { Response } from "node-fetch";
 import log from "../log";
-import { ParkingSpacesWrapper } from "../models/data/ParkingSpaces";
-import Task from "./Task";
-import { GovCLSQueuesWrapper } from "../models/gov/GovCLSQueues";
 import { CLSQueueInfo, CLSQueuesWrapper } from "../models/data/CLSQueues";
+import { GovCLSQueuesWrapper } from "../models/gov/GovCLSQueues";
+import Task from "./Task";
 
 const DATA_URL = "https://sojpublicdata.blob.core.windows.net/cls/queues.json";
 

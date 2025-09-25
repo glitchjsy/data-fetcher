@@ -91,6 +91,7 @@ function fetchCLSQueuesTask() {
  */
 async function heartbeat() {
     log.debug("Heatbeat sent");
+
     try {
         await redis.setAsync("data-fetcher-heartbeat", Date.now().toString());
     } catch (e: any) {
