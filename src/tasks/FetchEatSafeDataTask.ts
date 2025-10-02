@@ -12,6 +12,10 @@ const geocodingClient = MapboxClient({ accessToken: config.mapboxToken });
 const DATA_URL = "https://sojopendata.azurewebsites.net/eatsafe/json";
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
+async function wait(ms: number) {
+    return new Promise(r => setTimeout(r, ms));
+}
+
 class FetchEatSafeDataTask extends Task<EatSafeRating[]> {
 
     constructor() {
@@ -94,6 +98,9 @@ class FetchEatSafeDataTask extends Task<EatSafeRating[]> {
                             fetchedAt: Date.now()
                         }));
                     }
+
+                    // Limit to 800 requests per minute to avoid rate limiting
+                    await wait(60000 / 800); 
                 } catch (e: any) {
                     log.error(`Failed to fetch coordinates for ${rating.name}: ${e.message}`);
                     continue;
