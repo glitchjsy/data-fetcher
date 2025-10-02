@@ -8,4 +8,5 @@ export interface EatSafeRating {
     address3: string | null;
     latitude: number | null;
     longitude: number | null;
+    hash?: string;
 }

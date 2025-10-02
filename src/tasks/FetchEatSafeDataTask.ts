@@ -5,9 +5,12 @@ import { EatSafeRating } from "../models/data/EatSafeRatings";
 import { GovEatSafeRating } from "../models/gov/GovEatSafeRatings";
 import Task from "./Task";
 import config from "../../config.json";
+import crypto from "crypto";
+import redis from "../redis";
 
 const geocodingClient = MapboxClient({ accessToken: config.mapboxToken });
 const DATA_URL = "https://sojopendata.azurewebsites.net/eatsafe/json";
+const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
 class FetchEatSafeDataTask extends Task<EatSafeRating[]> {
 
@@ -45,26 +48,58 @@ class FetchEatSafeDataTask extends Task<EatSafeRating[]> {
                     i++;
                     continue;
                 }
-                const address = `${rating.address1}, ${rating.address2} ${rating.address3 ? `,${rating.address3}` : ""}, Jersey`;
+
+                const address = `${rating.address1}, ${rating.address2 ?? ""} ${rating.address3 ? `,${rating.address3}` : ""}, Jersey`.trim();
+                const hash = crypto.createHash("sha256").update(address).digest("hex");
+                const redisKey = `data-eatsafe-coords:${hash}`;
 
                 try {
+                    const cached = await redis.getAsync(redisKey);
+
+                    if (cached) {
+                        const parsed = JSON.parse(cached);
+
+                        // TODO: Make it auto expire
+                        if (
+                            parsed.latitude &&
+                            parsed.longitude &&
+                            parsed.fetchedAt &&
+                            (Date.now() - parsed.fetchedAt) < TWO_WEEKS_MS
+                        ) {
+                            rating.latitude = parsed.latitude;
+                            rating.longitude = parsed.longitude;
+
+                            log.debug(`Using cached coordinates for ${rating.name} (${++i}/${data.length})`);
+                            continue;
+                        }
+                    }
+
+                    // fetch new coords
                     const response = await geocodingClient.forwardGeocode({
                         query: address,
                         limit: 1
                     }).send();
 
-                    if (response && response.body && response.body.features && response.body.features.length > 0) {
+                    if (response?.body?.features?.length > 0) {
                         const { center } = response.body.features[0];
 
                         rating.latitude = center[1];
                         rating.longitude = center[0];
 
-                        log.debug(`Fetched coordinates for ${rating.name} (${++i}/${data.length})`)
+                        log.debug(`Fetched new coordinates for ${rating.name} (${++i}/${data.length})`);
+
+                        await redis.setAsync(redisKey, JSON.stringify({
+                            latitude: rating.latitude,
+                            longitude: rating.longitude,
+                            fetchedAt: Date.now()
+                        }));
                     }
                 } catch (e: any) {
+                    log.error(`Failed to fetch coordinates for ${rating.name}: ${e.message}`);
                     continue;
                 }
             }
+
             return data;
         }
 

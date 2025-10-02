@@ -9,7 +9,8 @@ A program to periodically fetch data to be stored permanently in MySQL or tempro
 Scrapes product recalls from a page on gov.je and saves the data in redis.
 
 * **Eat safe ratings**  
-Fetches eat safe ratings and finds the latitude and longitude based on the address provided (if applicable) then saves the data in redis.
+Fetches eat safe ratings and finds the latitude and longitude based on the address provided (if applicable) then saves the data in redis. 
+Data is fetched every 2 days latitude / longitude are cached for 2 weeks before fetching again to check it is up to date.
 
 * **Parking spaces**  
 Fetches parking space information and then:
