@@ -5,30 +5,31 @@ class Redis {
     private client: RedisClientType;
 
     constructor() {
-        this.client = createClient({
-            legacyMode: true
+        this.client = createClient();
+
+        this.client.on("error", (err) => {
+            console.error("Redis Client Error", err);
         });
-        this.client.connect();
+
+        this.client.connect().catch((err) => {
+            console.error("Failed to connect to Redis:", err);
+        });
     }
 
     public async getAsync(key: string) {
-        const func = promisify(this.client.get).bind(this.client);
-        return await func(key);
+        return await this.client.get(key);
     }
 
     public async setAsync(key: string, value: any) {
-        const func = promisify(this.client.set).bind(this.client);
-        return await func(key, value);
+        return await this.client.set(key, value);
     }
 
     public async delAsync(key: string) {
-        const func = promisify(this.client.del).bind(this.client);
-        return await func(key);
+        return await this.client.del(key);
     }
 
     public async existsAsync(key: string) {
-        const func = promisify(this.client.exists).bind(this.client);
-        return await func(key);
+        return await this.client.exists(key);
     }
 }
 
