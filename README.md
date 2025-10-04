@@ -19,3 +19,6 @@ Fetches parking space information and then:
 
 * **Customer & Local Services Queue Times**
 Fetches queue information for C&LS and saves the data in redis and MySQL for tracking over time.
+
+* **Freedom of Information Requests**
+Fetches FOI requests and stores in MySQL for easy searching.

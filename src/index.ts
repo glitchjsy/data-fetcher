@@ -7,6 +7,7 @@ import { fetchEatSafeRatings } from "./tasks/FetchEatSafeDataTask";
 import { fetchParkingSpaces } from "./tasks/FetchParkingSpacesTask";
 import { fetchProductRecalls } from "./tasks/FetchProductRecallsTask";
 import { fetchCLSQueues } from "./tasks/FetchCLSQueuesTask";
+import { fetchFOIRequests } from "./tasks/FetchFOIRequestsTask";
 
 log.info("Starting data-fetcher");
 
@@ -43,6 +44,13 @@ function fetchProductRecallsTask() {
     fetchProductRecalls()
         .then(async (totalRecalls) => {
             log.debug(`Fetched data on ${totalRecalls} product recalls...`);
+        });
+}
+
+function fetchFOIRequestsTask() {
+    fetchFOIRequests()
+        .then(async (totalRequests) => {
+            log.debug(`Fetched data on ${totalRequests} FOI requests...`);
         });
 }
 
@@ -109,12 +117,14 @@ async function registerCronJobs() {
     fetchEatSafeRatingsTask();
     fetchProductRecallsTask();
     fetchCLSQueuesTask();
+    fetchFOIRequestsTask();
 
     // Then set up cron jobs to run periodically
     new CronJob("0 */6 * * *", () => fetchProductRecallsTask()).start(); // every 6 hours
     new CronJob("0 0 */2 * *", () => fetchEatSafeRatingsTask()).start(); // every 2 days
     new CronJob("*/5 * * * *", () => fetchParkingSpacesTask()).start(); // every 5 minutes
-    new CronJob("*/5 * * * *", () => fetchCLSQueuesTask()).start(); // every 5 minutes
+    new CronJob("*/15 * * * *", () => fetchCLSQueuesTask()).start(); // every 15 minutes
+    new CronJob("0 */6 * * *", () => fetchFOIRequestsTask()).start(); // every 6 hours
 
     // Heartbeat
     heartbeat();
