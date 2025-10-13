@@ -104,10 +104,22 @@ class FetchFOIRequestsTask extends Task<number> {
         while (true) {
             log.info(`Fetching FOI Request (${i})`);
 
-            const data = await fetchRequest(i);
+            let data = null;
+            let found = false;
 
-            if (!data || !data.title) {
-                log.info(`No more FOI requests found at ID ${i}. Stopping.`);
+            // Check the next 5 as sometimes we encounter a deleted FOI request
+            for (let offset = 0; offset < 5; offset++) {
+                const nextData = await fetchRequest(i + offset);
+                
+                if (nextData && nextData.title) {
+                    data = nextData;
+                    found = true;
+                    i += offset;
+                    break;
+                }
+            }
+            if (!found) {
+                log.info(`No FOI requests found in the next 5 IDs starting from ${i}. Stopping.`);
                 break;
             }
 
