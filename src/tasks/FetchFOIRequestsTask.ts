@@ -110,7 +110,7 @@ class FetchFOIRequestsTask extends Task<number> {
             // Check the next 5 as sometimes we encounter a deleted FOI request
             for (let offset = 0; offset < 5; offset++) {
                 const nextData = await fetchRequest(i + offset);
-                
+
                 if (nextData && nextData.title) {
                     data = nextData;
                     found = true;
@@ -128,7 +128,7 @@ class FetchFOIRequestsTask extends Task<number> {
             try {
                 await mysql.execute(
                     `INSERT INTO foiRequests
-            (id, title, produce, author, publishDate, requestText, responseText)
+            (id, title, producer, author, publishDate, requestText, responseText)
             VALUES (?, ?, ?, ?, ?, ?, ?)`,
                     [
                         data.id,
