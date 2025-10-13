@@ -6,5 +6,6 @@
         "password": "password123",
         "database": "opendata"
     },
+    "debug": false,
     "mapboxToken": "pk.eyJ1IjoiZ2xpdGNoanN5IiwiYSI6ImNtOG9jZm92MjAweXYydHNjdXhnMXVlaGkifQ.x4Q8BUqZ7tdR_7ErvOqCzw"
 }

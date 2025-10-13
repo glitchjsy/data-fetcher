@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import config from "../config.json";
 
 class Logger {
 
@@ -15,7 +16,9 @@ class Logger {
     }
 
     public debug(text: string) {
-        this.log(chalk.gray("debug"), text);
+        if (config.debug) {
+            this.log(chalk.gray("debug"), text);
+        }
     }
 
     private log(prefix: string, text: string) {
