@@ -1,136 +1,130 @@
-import nodeFetch, { Response } from "node-fetch";
-import MapboxClient from "@mapbox/mapbox-sdk/services/geocoding";
 import log from "../log";
-import { EatSafeRating } from "../models/data/EatSafeRatings";
-import { GovEatSafeRating } from "../models/gov/GovEatSafeRatings";
-import Task from "./Task";
-import config from "../../config.json";
-import crypto from "crypto";
 import redis from "../redis";
+import MapboxClient from "@mapbox/mapbox-sdk/services/geocoding";
+import crypto from "crypto";
+import config from "../../config.json";
+import Task from "./Task";
+
+interface EatSafeRating {
+    name: string;
+    rating: number;
+    createdAt: string;
+    postCode: string | null;
+    address1: string | null;
+    address2: string | null;
+    address3: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    hash?: string;
+}
 
 const geocodingClient = MapboxClient({ accessToken: config.mapboxToken });
 const DATA_URL = "https://sojopendata.azurewebsites.net/eatsafe/json";
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+const RATE_LIMIT = 800; // per minute
+const WAIT_MS = 60000 / RATE_LIMIT;
 
-async function wait(ms: number) {
-    return new Promise(r => setTimeout(r, ms));
-}
-
-class FetchEatSafeDataTask extends Task<EatSafeRating[]> {
-
+export default class FetchEatSafeDataTask extends Task {
     constructor() {
         super("Fetch Eat Safe Ratings");
     }
 
-    public async execute(): Promise<EatSafeRating[]> {
+    protected async fetchData(): Promise<any[]> {
+        log.debug(this.name, `Fetching from ${DATA_URL}`);
+        return this.fetchJson(DATA_URL);
+    }
 
-        const transform = (data: GovEatSafeRating[]): EatSafeRating[] => {
-            const ratings = [] as EatSafeRating[];
-
-            data.forEach(rating => {
-                ratings.push({
-                    name: rating.Addr1,
-                    rating: Number(rating.Rating),
-                    createdAt: rating.Completiondate,
-                    address1: rating.Addr2 || null,
-                    address2: rating.Addr3 || null,
-                    address3: rating.Addr4 || null,
-                    postCode: rating.Postcd || null,
-                    latitude: null,
-                    longitude: null
-                });
-            });
-
-            return ratings;
+    protected validateData(data: any): any[] {
+        if (!Array.isArray(data)) {
+            throw new Error("Expected array response from API");
         }
+        for (const item of data) {
+            if (typeof item.Addr1 !== "string" || typeof item.Rating === "undefined") {
+                throw new Error("Invalid response format");
+            }
+        }
+        return data;
+    }
 
-        const fetchCoordinates = async (data: EatSafeRating[]): Promise<EatSafeRating[]> => {
-            let i = 0;
+    protected transformData(data: any[]): EatSafeRating[] {
+        return data.map(rating => ({
+            name: rating.Addr1,
+            rating: Number(rating.Rating),
+            createdAt: rating.Completiondate,
+            address1: rating.Addr2 || null,
+            address2: rating.Addr3 || null,
+            address3: rating.Addr4 || null,
+            postCode: rating.Postcd || null,
+            latitude: null,
+            longitude: null
+        }));
+    }
 
-            for (const rating of data) {
-                if (!rating.address1) {
-                    i++;
-                    continue;
-                }
+    protected async persistData(data: EatSafeRating[]): Promise<void> {
+        let i = 0;
 
-                const address = `${rating.address1}, ${rating.address2 ?? ""} ${rating.address3 ? `,${rating.address3}` : ""}, Jersey`.trim();
-                const hash = crypto.createHash("sha256").update(address).digest("hex");
-                const redisKey = `data-eatsafe-coords:${hash}`;
-
-                try {
-                    const cached = await redis.getAsync(redisKey);
-
-                    if (cached) {
-                        const parsed = JSON.parse(cached);
-
-                        // TODO: Make it auto expire
-                        if (
-                            parsed.latitude &&
-                            parsed.longitude &&
-                            parsed.fetchedAt &&
-                            (Date.now() - parsed.fetchedAt) < TWO_WEEKS_MS
-                        ) {
-                            rating.latitude = parsed.latitude;
-                            rating.longitude = parsed.longitude;
-
-                            log.debug(`Using cached coordinates for ${rating.name} (${++i}/${data.length})`);
-                            continue;
-                        }
-                    }
-
-                    // fetch new coords
-                    const response = await geocodingClient.forwardGeocode({
-                        query: address,
-                        limit: 1
-                    }).send();
-
-                    if (response?.body?.features?.length > 0) {
-                        const { center } = response.body.features[0];
-
-                        rating.latitude = center[1];
-                        rating.longitude = center[0];
-
-                        log.debug(`Fetched new coordinates for ${rating.name} (${++i}/${data.length})`);
-
-                        await redis.setAsync(redisKey, JSON.stringify({
-                            latitude: rating.latitude,
-                            longitude: rating.longitude,
-                            fetchedAt: Date.now()
-                        }));
-                    }
-
-                    // Limit to 800 requests per minute to avoid rate limiting
-                    await wait(60000 / 800); 
-                } catch (e: any) {
-                    log.error(`Failed to fetch coordinates for ${rating.name}: ${e.message}`);
-                    continue;
-                }
+        for (const rating of data) {
+            if (!rating.address1) {
+                i++;
+                continue;
             }
 
-            return data;
+            const address = `${rating.address1}, ${rating.address2 ?? ""}${rating.address3 ? `, ${rating.address3}` : ""}, Jersey`.trim();
+            const hash = crypto.createHash("sha256").update(address).digest("hex");
+            const redisKey = `data-eatsafe-coords:${hash}`;
+
+            try {
+                const cached = await redis.getAsync(redisKey);
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    if (
+                        parsed.latitude &&
+                        parsed.longitude &&
+                        parsed.fetchedAt &&
+                        (Date.now() - parsed.fetchedAt) < TWO_WEEKS_MS
+                    ) {
+                        rating.latitude = parsed.latitude;
+                        rating.longitude = parsed.longitude;
+                        log.trace(this.name, `Using cached coordinates for ${rating.name} (${++i}/${data.length})`);
+                        continue;
+                    }
+                }
+
+                const response = await geocodingClient.forwardGeocode({
+                    query: address,
+                    limit: 1
+                }).send();
+
+                if (response?.body?.features?.length > 0) {
+                    const { center } = response.body.features[0];
+                    rating.latitude = center[1];
+                    rating.longitude = center[0];
+
+                    await redis.setAsync(redisKey, JSON.stringify({
+                        latitude: rating.latitude,
+                        longitude: rating.longitude,
+                        fetchedAt: Date.now()
+                    }));
+
+                    log.debug(this.name, `Fetched new coordinates for ${rating.name} (${++i}/${data.length})`);
+                } else {
+                    log.debug(this.name, `No coordinates found for ${rating.name} (${++i}/${data.length})`);
+                }
+
+                await this.wait(WAIT_MS);
+            } catch (e: any) {
+                log.error(this.name, `Failed to geocode ${rating.name}: ${e.message}`);
+            }
         }
 
-        log.debug("Fetching eatsafe ratings...");
-
-        return nodeFetch(DATA_URL)
-            .then(validateResponse)
-            .then(transform)
-            .then(fetchCoordinates);
+        await redis.setAsync("data-eatsafe:json", JSON.stringify(data));
     }
 
+    protected async afterExecute(data: EatSafeRating[]): Promise<void> {
+        log.info(this.name, `Processed ${data.length} Eat Safe ratings`);
+    }
 
-    public async validateResponse(response: Response): Promise<any> {
-        if (response.status !== 200) {
-            throw new Error(`Received unexpected status code (${response.status})`);
-        }
-        const json = await response.json();
-
-        return json;
+    private async wait(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 }
-
-const task = new FetchEatSafeDataTask();
-
-const validateResponse = task.validateResponse;
-
-export const fetchEatSafeRatings = task.execute;

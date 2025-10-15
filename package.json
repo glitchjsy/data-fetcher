@@ -1,6 +1,6 @@
 {
   "name": "@glitchjsy/data-fetcher",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Data fetcher for Open Data",
   "author": "Luke <luke@glitch.je>",
   "license": "MIT",

@@ -1,109 +1,25 @@
 import { CronJob } from "cron";
 import log from "./log";
-import mysql from "./mysql";
 import redis from "./redis";
-import { TASKS } from "./registry";
-import { fetchEatSafeRatings } from "./tasks/FetchEatSafeDataTask";
-import { fetchParkingSpaces } from "./tasks/FetchParkingSpacesTask";
-import { fetchProductRecalls } from "./tasks/FetchProductRecallsTask";
-import { fetchCLSQueues } from "./tasks/FetchCLSQueuesTask";
-import { fetchFOIRequests } from "./tasks/FetchFOIRequestsTask";
+import FetchCLSQueuesTask from "./tasks/FetchCLSQueuesTask";
+import FetchEatSafeDataTask from "./tasks/FetchEatSafeDataTask";
+import FetchFOIRequestsTask from "./tasks/FetchFOIRequestsTask";
+import FetchParkingSpacesTask from "./tasks/FetchParkingSpacesTask";
+import FetchProductRecallsTask from "./tasks/FetchProductRecallsTask";
+import FetchCourtListingsTask from "./tasks/FetchCourtListingsTask";
 
-log.info("Starting data-fetcher");
-
-TASKS.forEach(task => log.info("Loaded task " + task.name));
-
-// Fetch parking spaces and update them in the database
-function fetchParkingSpacesTask() {
-    fetchParkingSpaces()
-        .then(async ({ carparks, timestamp }) => {
-            log.debug(`Fetched data on ${carparks.length} carparks...`);
-
-            try {
-                await redis.setAsync("data-livespaces:json", JSON.stringify({ results: carparks, timestamp }));
-
-                for (const carpark of carparks) {
-                    await mysql.execute("INSERT INTO liveParkingSpaces (createdAt,name,code,spaces,status,open) VALUES (?,?,?,?,?,?)", [
-                        timestamp,
-                        carpark.name,
-                        carpark.code,
-                        carpark.spaces,
-                        carpark.status,
-                        carpark.open
-                    ]);
-                }
-                log.debug("Updated in database");
-            } catch (e: any) {
-                log.error("Failed to update parking spaces in database: " + e.message);
-            }
-        })
-        .catch(e => log.error("Failed to fetch parking spaces: " + e.message));
-}
-
-function fetchProductRecallsTask() {
-    fetchProductRecalls()
-        .then(async (totalRecalls) => {
-            log.debug(`Fetched data on ${totalRecalls} product recalls...`);
-        });
-}
-
-function fetchFOIRequestsTask() {
-    fetchFOIRequests()
-        .then(async (totalRequests) => {
-            log.debug(`Fetched data on ${totalRequests} FOI requests...`);
-        });
-}
-
-function fetchEatSafeRatingsTask() {
-    fetchEatSafeRatings()
-        .then(async (ratings) => {
-            log.debug(`Fetched eatsafe data on ${ratings.length} businesses...`);
-
-            try {
-                await redis.setAsync("data-eatsafe:json", JSON.stringify(ratings));
-            } catch (e: any) {
-                log.error("Failed to update eatsafe ratings in database: " + e.message);
-            }
-        }).catch(e => log.error("Failed to fetch eatsafe ratings: " + e.message));
-}
-
-function fetchCLSQueuesTask() {
-    fetchCLSQueues()
-        .then(async ({ queues, timestamp }) => {
-            log.debug(`Fetched cls queues data...`);
-
-            try {
-                await redis.setAsync("data-clsqueues:json", JSON.stringify({ results: queues, timestamp }));
-
-                for (const queue of queues) {
-                    await mysql.execute("INSERT INTO liveClsQueuesData (createdAt,name,queueId,color,open,waiting,waitingMinutes) VALUES (?,?,?,?,?,?,?)", [
-                        timestamp,
-                        queue.name,
-                        queue.queueId,
-                        queue.color,
-                        queue.open,
-                        queue.waiting,
-                        queue.waitingMinutes
-                    ]);
-                }
-                log.debug("Updated in database");
-            } catch (e: any) {
-                log.error("Failed to update cls queues in database: " + e.message);
-            }
-        })
-        .catch(e => log.error("Failed to fetch cls queues data: " + e.message));
-}
+log.info("system", "Starting data-fetcher");
 
 /**
  * Update the heartbeat time in redis for status checking.
  */
 async function heartbeat() {
-    log.debug("Heatbeat sent");
+    log.debug("system", "Heatbeat sent");
 
     try {
         await redis.setAsync("data-fetcher-heartbeat", Date.now().toString());
     } catch (e: any) {
-        log.error("Failed to update heartbeat in redis: " + e.message);
+        log.error("system", "Failed to update heartbeat in redis: " + e.message);
     }
 }
 
@@ -112,19 +28,28 @@ async function heartbeat() {
  * in the database.
  */
 async function registerCronJobs() {
-    // Run immediately
-    fetchParkingSpacesTask();
-    fetchEatSafeRatingsTask();
-    fetchProductRecallsTask();
-    fetchCLSQueuesTask();
-    fetchFOIRequestsTask();
+    const fetchParkingSpacesTask = new FetchParkingSpacesTask();
+    const fetchClsQueuesTask = new FetchCLSQueuesTask();
+    const fetchEatSafeTask = new FetchEatSafeDataTask();
+    const fetchFoiRequestsTask = new FetchFOIRequestsTask();
+    const fetchProductRecallsTask = new FetchProductRecallsTask();
+    const fetchCourtListingsTask = new FetchCourtListingsTask();
 
-    // Then set up cron jobs to run periodically
-    new CronJob("0 */6 * * *", () => fetchProductRecallsTask()).start(); // every 6 hours
-    new CronJob("0 0 */2 * *", () => fetchEatSafeRatingsTask()).start(); // every 2 days
-    new CronJob("*/5 * * * *", () => fetchParkingSpacesTask()).start(); // every 5 minutes
-    new CronJob("*/15 * * * *", () => fetchCLSQueuesTask()).start(); // every 15 minutes
-    new CronJob("0 */6 * * *", () => fetchFOIRequestsTask()).start(); // every 6 hours
+    // Run immediately
+    fetchParkingSpacesTask.execute();
+    fetchClsQueuesTask.execute();
+    fetchEatSafeTask.execute();
+    fetchFoiRequestsTask.execute();
+    fetchProductRecallsTask.execute();
+    fetchCourtListingsTask.execute();
+
+    // Set up cron jobs to run periodically
+    new CronJob("*/5 * * * *", () => fetchParkingSpacesTask.execute()).start(); // every 5 minutes
+    new CronJob("*/15 * * * *", () => fetchClsQueuesTask.execute()).start(); // every 15 minutes
+    new CronJob("0 0 */2 * *", () => fetchEatSafeTask.execute()).start(); // every 2 days
+    new CronJob("0 */6 * * *", () => fetchFoiRequestsTask.execute()).start(); // every 6 hours
+    new CronJob("30 */6 * * *", () => fetchProductRecallsTask.execute()).start(); // every 6 hours at half past the hour
+    new CronJob("0 3 */1 * *", () => fetchCourtListingsTask.execute()).start(); // every day at 3am
 
     // Heartbeat
     heartbeat();

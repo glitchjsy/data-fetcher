@@ -3,26 +3,32 @@ import config from "../config.json";
 
 class Logger {
 
-    public info(text: string) {
-        this.log(chalk.green("info"), text);
+    public info(task: string, text: string) {
+        this.log(task, chalk.green("info"), text);
     }
 
-    public warn(text: string) {
-        this.log(chalk.yellow("warn"), text);
+    public warn(task: string, text: string) {
+        this.log(task, chalk.yellow("warn"), text);
     }
 
-    public error(text: string) {
-        this.log(chalk.red("error"), text);
+    public error(task: string, text: string) {
+        this.log(task, chalk.red("error"), text);
     }
 
-    public debug(text: string) {
-        if (config.debug) {
-            this.log(chalk.gray("debug"), text);
+    public trace(task: string, text: string) {
+        if (config.trace) {
+            console.log(`${chalk.dim("trace")}: ${chalk.dim(`[${task}]`)} ${chalk.dim(text)}`);
         }
     }
 
-    private log(prefix: string, text: string) {
-        console.log(`${prefix}: ${text}`);
+    public debug(task: string, text: string) {
+        if (!config.debug) {
+            this.log(task, "debug", chalk.dim(text));
+        }
+    }
+
+    private log(task: string, prefix: string, text: string) {
+        console.log(`${prefix}: ${chalk.blue(`[${task}]`)} ${text}`);
     }
 }
 

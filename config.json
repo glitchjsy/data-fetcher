@@ -7,5 +7,6 @@
         "database": "opendata"
     },
     "debug": false,
+    "trace": false,
     "mapboxToken": "pk.eyJ1IjoiZ2xpdGNoanN5IiwiYSI6ImNtOG9jZm92MjAweXYydHNjdXhnMXVlaGkifQ.x4Q8BUqZ7tdR_7ErvOqCzw"
 }

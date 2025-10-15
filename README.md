@@ -1,6 +1,6 @@
 <img src="https://i.imgur.com/1cXD3b0.png">
 
-# [Open Data (Fetcher)](https://data.glitch.je)
+# [Open Data (Fetcher)](https://opendata.je)
 [![Hits](https://hitcount.dev/p/glitchjsy/data-fetcher.svg)](https://hitcount.dev/p/glitchjsy/data-fetcher)  
 A program to periodically fetch data to be stored permanently in MySQL or temproarily in Redis.
 
