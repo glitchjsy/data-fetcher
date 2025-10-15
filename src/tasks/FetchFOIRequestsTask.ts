@@ -38,7 +38,7 @@ export default class FetchFOIRequestsTask extends Task {
             // Check the next 5 IDs in case of deleted FOI requests
             for (let offset = 0; offset < 5; offset++) {
                 const nextData = await this.fetchSingleRequest(currentId + offset);
-                
+
                 if (nextData && nextData.title) {
                     data = nextData;
                     currentId += offset;
@@ -53,6 +53,7 @@ export default class FetchFOIRequestsTask extends Task {
             }
 
             if (data) {
+                this.persistDataReal(data);
                 results.push(data);
             }
             currentId++;
@@ -73,31 +74,33 @@ export default class FetchFOIRequestsTask extends Task {
     }
 
     protected async persistData(data: FOIRequest[]): Promise<void> {
-        for (const item of data) {
-            try {
-                await mysql.execute(
-                    `INSERT INTO foiRequests
-                        (id, title, producer, author, publishDate, requestText, responseText)
-                     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                    [
-                        item.id,
-                        item.title,
-                        item.producer,
-                        item.author,
-                        this.formatForMySQL(item.publishDate),
-                        item.requestText,
-                        item.responseText
-                    ]
-                );
-                log.debug(this.name, `Inserted FOI request ${item.id} into database.`);
-            } catch (err: any) {
-                log.error(this.name, `Failed to insert FOI request ${item.id}: ${err.message}`);
-            }
-        }
+        // nothing
     }
 
     protected async afterExecute(data: FOIRequest[]): Promise<void> {
         log.info(this.name, `Finished FOI scraping. Total inserted: ${data.length}`);
+    }
+
+    private async persistDataReal(item: FOIRequest): Promise<void> {
+        try {
+            await mysql.execute(
+                `INSERT INTO foiRequests
+                        (id, title, producer, author, publishDate, requestText, responseText)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    item.id,
+                    item.title,
+                    item.producer,
+                    item.author,
+                    this.formatForMySQL(item.publishDate),
+                    item.requestText,
+                    item.responseText
+                ]
+            );
+            log.debug(this.name, `Inserted FOI request ${item.id} into database.`);
+        } catch (err: any) {
+            log.error(this.name, `Failed to insert FOI request ${item.id}: ${err.message}`);
+        }
     }
 
     private async getStartId(): Promise<number> {

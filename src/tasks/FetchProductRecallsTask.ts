@@ -28,14 +28,14 @@ interface ProductRecall {
 const DATA_URL = "https://www.gov.je/stayingsafe/consumerprotection/productsafety/Pages/ProductRecalls.aspx";
 
 export default class FetchProductRecallsTask extends Task {
-    
+
     constructor() {
         super("Fetch Product Recalls");
     }
 
     protected async fetchData(): Promise<RecallListing[]> {
         log.debug(this.name, "Fetching product recall listing page...");
-        
+
         const html = await this.fetchHtml(DATA_URL);
         const $ = load(html);
 
@@ -80,7 +80,7 @@ export default class FetchProductRecallsTask extends Task {
                 const $ = load(recallHtml);
 
                 const tableData: Record<string, string | undefined> = {};
-                
+
                 $("table tbody tr").each((_, element) => {
                     const key = $(element).find("th").text().trim();
                     const value = $(element).find("td").html()?.trim();
@@ -108,6 +108,7 @@ export default class FetchProductRecallsTask extends Task {
                     websiteUrl
                 } as ProductRecall;
 
+                this.persistDataReal(recall);
                 output.push(recall);
             } catch (e: any) {
                 log.error(this.name, `Failed to fetch recall ${item.id}: ${e.message}`);
@@ -118,33 +119,35 @@ export default class FetchProductRecallsTask extends Task {
     }
 
     protected async persistData(data: ProductRecall[]): Promise<void> {
-        for (const recall of data) {
-            try {
-                await mysql.execute(
-                    `INSERT INTO productRecalls
-                        (id, title, imageUrl, brand, recallDate, packSize, batchCodes, problem, furtherInformation, websiteUrl)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [
-                        recall.id,
-                        recall.title,
-                        recall.imageUrl,
-                        recall.brand,
-                        recall.recallDate,
-                        recall.packSize,
-                        recall.batchCodes,
-                        recall.problem,
-                        recall.furtherInformation,
-                        recall.websiteUrl
-                    ]
-                );
-                log.debug(this.name, `Inserted recall ${recall.id} into database.`);
-            } catch (err: any) {
-                log.error(this.name, `Failed to insert recall ${recall.id}: ${err.message}`);
-            }
-        }
+
     }
 
     protected async afterExecute(data: ProductRecall[]): Promise<void> {
         log.info(this.name, `Finished product recall scraping. Total new recalls: ${data.length}`);
+    }
+
+    private async persistDataReal(recall: ProductRecall): Promise<void> {
+        try {
+            await mysql.execute(
+                `INSERT INTO productRecalls
+                        (id, title, imageUrl, brand, recallDate, packSize, batchCodes, problem, furtherInformation, websiteUrl)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    recall.id,
+                    recall.title,
+                    recall.imageUrl,
+                    recall.brand,
+                    recall.recallDate,
+                    recall.packSize,
+                    recall.batchCodes,
+                    recall.problem,
+                    recall.furtherInformation,
+                    recall.websiteUrl
+                ]
+            );
+            log.debug(this.name, `Inserted recall ${recall.id} into database.`);
+        } catch (err: any) {
+            log.error(this.name, `Failed to insert recall ${recall.id}: ${err.message}`);
+        }
     }
 }
