@@ -21,7 +21,7 @@ const DATA_URL = "https://sojpublicdata.blob.core.windows.net/cls/queues.json";
 
 export default class FetchCLSQueuesTask extends Task {
     constructor() {
-        super("Fetch Customer & Local Services Queues");
+        super("Fetch Customer & Local Services Queues", "cls-queues");
     }
 
     protected async fetchData(): Promise<any> {

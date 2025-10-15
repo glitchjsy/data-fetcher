@@ -30,7 +30,7 @@ const DATA_URL = "https://www.gov.je/stayingsafe/consumerprotection/productsafet
 export default class FetchProductRecallsTask extends Task {
 
     constructor() {
-        super("Fetch Product Recalls");
+        super("Fetch Product Recalls", "recalls");
     }
 
     protected async fetchData(): Promise<RecallListing[]> {

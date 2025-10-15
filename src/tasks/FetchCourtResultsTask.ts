@@ -3,20 +3,27 @@ import mysql from "../mysql";
 import Task from "./Task";
 import crypto from "crypto";
 
-const DATA_URL = "https://tstgojcourtssa.blob.core.windows.net/court-listings/courtListsWeekly.json";
+const DATA_URL = "https://tstgojcourtssa.blob.core.windows.net/court-listings/courtListsResults.json";
 
 type Listing = {
     appearanceDate: string;
-    courtRoom: string;
+    video: string;
     hearingPurpose: string;
+    result: string;
+    remandedOrBailed: string;
+    nextAppearance: string | null;
+    courtRoom: string;
+    lawOfficer: string | null;
     defendant: string;
+    magistrate: string;
+    offences: string[];
 };
 
-export default class FetchCourtListingsTask extends Task {
+export default class FetchCourtResultsTask extends Task {
     private weekHash: string | null = null;
 
     constructor() {
-        super("Fetch Court Listings", "court-listings");
+        super("Fetch Court Results", "court-results");
     }
 
     protected async fetchData(): Promise<any> {
@@ -29,7 +36,7 @@ export default class FetchCourtListingsTask extends Task {
             throw new Error("Invalid response: missing data or not an array");
         }
         if (!data[0].DateOfAppearance || !data[0].Courtroom) {
-            throw new Error("Missing 'DateOfAppearance' or `Courtroom`");
+            throw new Error("Missing 'DateOfAppearance' or 'Courtroom'");
         }
         return data;
     }
@@ -47,9 +54,18 @@ export default class FetchCourtListingsTask extends Task {
 
         return sorted.map((listing: any) => ({
             appearanceDate: listing.DateOfAppearance,
-            courtRoom: listing.Courtroom.trim(),
+            video: listing.Video,
             hearingPurpose: listing["Hearing Purpose"].trim(),
+            result: listing.Result?.trim() || "",
+            remandedOrBailed: listing["Remanded or Bailed"] || "",
+            nextAppearance: listing["Next Apperance"] || null,
+            courtRoom: listing.Courtroom.trim(),
+            lawOfficer: listing["Law Officer"] || null,
             defendant: listing.Defendant.trim(),
+            magistrate: listing.Magistrate || "",
+            offences: Array.isArray(listing.Offences)
+                ? listing.Offences.map((o: any) => o.Value.trim())
+                : []
         }));
     }
 
@@ -68,15 +84,32 @@ export default class FetchCourtListingsTask extends Task {
         }
 
         for (const listing of data) {
-            await mysql.execute(
-                `INSERT INTO courtListings (appearanceDate, courtRoom, hearingPurpose, defendant) VALUES (?, ?, ?, ?)`,
+            const result: any = await mysql.execute(
+                `INSERT INTO courtResults 
+                (appearanceDate, video, hearingPurpose, result, remandedOrBailed, nextAppearanceDate, courtRoom, lawOfficer, defendant, magistrate)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     this.formatMySQLDate(listing.appearanceDate),
-                    listing.courtRoom,
+                    listing.video,
                     listing.hearingPurpose,
-                    listing.defendant
+                    listing.result,
+                    listing.remandedOrBailed,
+                    this.formatMySQLDate(listing.nextAppearance),
+                    listing.courtRoom,
+                    listing.lawOfficer,
+                    listing.defendant,
+                    listing.magistrate
                 ]
             );
+
+            const listingId = result.insertId;
+
+            for (const offence of listing.offences) {
+                await mysql.execute(
+                    `INSERT INTO courtResultOffences (listingId, offence) VALUES (?, ?)`,
+                    [listingId, offence]
+                );
+            }
         }
 
         await mysql.execute(

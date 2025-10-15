@@ -26,7 +26,7 @@ const WAIT_MS = 60000 / RATE_LIMIT;
 
 export default class FetchEatSafeDataTask extends Task {
     constructor() {
-        super("Fetch Eat Safe Ratings");
+        super("Fetch Eat Safe Ratings", "eatsafe");
     }
 
     protected async fetchData(): Promise<any[]> {

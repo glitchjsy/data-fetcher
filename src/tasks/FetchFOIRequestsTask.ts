@@ -17,7 +17,7 @@ const DATA_URL = "https://www.gov.je/government/freedomofinformation/pages/foi.a
 
 export default class FetchFOIRequestsTask extends Task {
     constructor() {
-        super("Fetch Freedom of Information Requests");
+        super("Fetch Freedom of Information Requests", "foi-requests");
     }
 
     /**

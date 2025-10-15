@@ -20,7 +20,7 @@ const DATA_URL = "http://sojpublicdata.blob.core.windows.net/sojpublicdata/carpa
 
 export default class FetchParkingSpacesTask extends Task {
     constructor() {
-        super("Fetch Parking Spaces");
+        super("Fetch Parking Spaces", "parking-spaces");
     }
 
     protected async fetchData(): Promise<any> {

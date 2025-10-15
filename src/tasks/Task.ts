@@ -1,11 +1,15 @@
 import nodeFetch from "node-fetch";
 import log from "../log";
+import { TASKS } from "..";
 
-export default abstract class TaskNew {
+export default abstract class Task {
     public name: string;
+    public command: string;
 
-    constructor(name: string) {
+    constructor(name: string, command: string) {
         this.name = name;
+        this.command = command;
+        TASKS.push(this);
         log.info("system", `Loaded task ${name}`);
     }
 

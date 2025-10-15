@@ -2,6 +2,16 @@ import chalk from "chalk";
 import config from "../config.json";
 
 class Logger {
+    public static DEBUG = config.debug;
+    public static TRACE = config.trace;
+
+    public setDebug(value: boolean) {
+        Logger.DEBUG = value;
+    }
+
+    public setTrace(value: boolean) {
+        Logger.TRACE = value;
+    }
 
     public info(task: string, text: string) {
         this.log(task, chalk.green("info"), text);
@@ -16,13 +26,13 @@ class Logger {
     }
 
     public trace(task: string, text: string) {
-        if (config.trace) {
+        if (Logger.TRACE) {
             console.log(`${chalk.dim("trace")}: ${chalk.dim(`[${task}]`)} ${chalk.dim(text)}`);
         }
     }
 
     public debug(task: string, text: string) {
-        if (config.debug) {
+        if (Logger.DEBUG) {
             this.log(task, "debug", chalk.dim(text));
         }
     }
