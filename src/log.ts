@@ -22,7 +22,7 @@ class Logger {
     }
 
     public debug(task: string, text: string) {
-        if (!config.debug) {
+        if (config.debug) {
             this.log(task, "debug", chalk.dim(text));
         }
     }
