@@ -21,7 +21,7 @@ const DATA_URL = "https://tstgojcourtssa.blob.core.windows.net/court-listings/co
 export default class FetchMagistratesCourtResultsTask extends Task {
 
     constructor() {
-        super("Fetch Magistrates Court Results", "magistates-court-results");
+        super("Fetch Magistrates Court Results", "magistrates-court-results");
     }
 
     protected async fetchData(): Promise<any> {
