@@ -100,7 +100,7 @@ export default class FetchMagistratesCourtResultsTask extends Task {
             if (listingId > 0) {
                 for (const offence of listing.offences) {
                     await mysql.execute(
-                        `INSERT INTO magistratesCourtResultOffences (listingId, offence) VALUES (?, ?) ON DUPLICATE KEY UPDATE offence = offence`,
+                        `INSERT INTO magistratesCourtResultOffences (resultId, offence) VALUES (?, ?) ON DUPLICATE KEY UPDATE offence = offence`,
                         [listingId, offence]
                     );
                 }
