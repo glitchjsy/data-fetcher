@@ -77,7 +77,7 @@ export default class FetchMagistratesCourtResultsTask extends Task {
 
         for (const listing of data) {
             const result: any = await mysql.execute(
-                `INSERT INTO magistatesCourtResults 
+                `INSERT INTO magistratesCourtResults 
                 (appearanceDate, video, hearingPurpose, result, remandedOrBailed, nextAppearanceDate, courtRoom, lawOfficer, defendant, magistrate)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE result = result`,
