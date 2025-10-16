@@ -1,19 +1,17 @@
 import log from "../log";
 import mysql from "../mysql";
 import Task from "./Task";
-import crypto from "crypto";
 
-const DATA_URL = "https://tstgojcourtssa.blob.core.windows.net/court-listings/courtListsWeekly.json";
-
-type Listing = {
+interface Listing {
     appearanceDate: string;
     courtRoom: string;
     hearingPurpose: string;
     defendant: string;
-};
+}
+
+const DATA_URL = "https://tstgojcourtssa.blob.core.windows.net/court-listings/courtListsWeekly.json";
 
 export default class FetchCourtListingsTask extends Task {
-    private weekHash: string | null = null;
 
     constructor() {
         super("Fetch Court Listings", "court-listings");
@@ -35,41 +33,39 @@ export default class FetchCourtListingsTask extends Task {
     }
 
     protected transformData(data: any): Listing[] {
-        const sorted = [...data].sort((a, b) =>
-            (a.DateOfAppearance + a.Courtroom + a.Defendant)
-                .localeCompare(b.DateOfAppearance + b.Courtroom + b.Defendant)
-        );
-
-        this.weekHash = crypto
-            .createHash("sha256")
-            .update(JSON.stringify(sorted))
-            .digest("hex");
-
-        return sorted.map((listing: any) => ({
-            appearanceDate: listing.DateOfAppearance,
-            courtRoom: listing.Courtroom.trim(),
-            hearingPurpose: listing["Hearing Purpose"].trim(),
-            defendant: listing.Defendant.trim(),
+        const listings = data.map((item: any) => ({
+            appearanceDate: item.DateOfAppearance,
+            courtRoom: item.Courtroom.trim(),
+            hearingPurpose: item["Hearing Purpose"].trim(),
+            defendant: item.Defendant.trim(),
         }));
+
+        // Remove duplicate "Youth" listings
+        const seenYouth: Record<string, boolean> = {};
+        const filtered = listings.filter((listing: any) => {
+            if (listing.defendant === "Youth") {
+                const key = `${listing.appearanceDate}|${listing.courtRoom}|${listing.hearingPurpose}`;
+                if (seenYouth[key]) {
+                    return false;
+                }
+                seenYouth[key] = true;
+            }
+            return true;
+        });
+
+        return filtered.sort((a: any, b: any) =>
+            (a.appearanceDate + a.courtRoom + a.defendant).localeCompare(b.appearanceDate + b.courtRoom + b.defendant)
+        );
     }
 
     protected async persistData(data: Listing[]): Promise<void> {
-        if (!this.weekHash || data.length === 0) return;
-
-        const existing: any[] = await mysql.execute(
-            `SELECT COUNT(*) as count FROM courtListingsWeeklyHashes WHERE hash = ?`,
-            [this.weekHash]
-        );
-
-        const count = existing?.[0]?.count || 0;
-        if (count > 0) {
-            log.info(this.name, "This week's data already exists — skipping insert");
-            return;
-        }
+        if (!data || data.length === 0) return;
 
         for (const listing of data) {
             await mysql.execute(
-                `INSERT INTO courtListings (appearanceDate, courtRoom, hearingPurpose, defendant) VALUES (?, ?, ?, ?)`,
+                `INSERT INTO courtListings (appearanceDate, courtRoom, hearingPurpose, defendant)
+                 VALUES (?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE defendant = defendant`,
                 [
                     this.formatMySQLDate(listing.appearanceDate),
                     listing.courtRoom,
@@ -78,11 +74,6 @@ export default class FetchCourtListingsTask extends Task {
                 ]
             );
         }
-
-        await mysql.execute(
-            `INSERT INTO courtListingsWeeklyHashes (hash) VALUES (?)`,
-            [this.weekHash]
-        );
     }
 
     protected async afterExecute(data: Listing[]): Promise<void> {

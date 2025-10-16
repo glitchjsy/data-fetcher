@@ -47,6 +47,8 @@ async function registerCronJobs() {
     fetchEatSafeTask.execute();
     fetchFoiRequestsTask.execute();
     fetchProductRecallsTask.execute();
+    fetchCourtListingsTask.execute();
+    fetchCourtResultsTask.execute();
 
     // Set up cron jobs to run periodically
     new CronJob("*/5 * * * *", () => fetchParkingSpacesTask.execute()).start(); // every 5 minutes
@@ -54,6 +56,8 @@ async function registerCronJobs() {
     new CronJob("0 0 */2 * *", () => fetchEatSafeTask.execute()).start(); // every 2 days
     new CronJob("0 */6 * * *", () => fetchFoiRequestsTask.execute()).start(); // every 6 hours
     new CronJob("30 */6 * * *", () => fetchProductRecallsTask.execute()).start(); // every 6 hours at half past the hour
+    new CronJob("0 */1 * * *", () => fetchCourtListingsTask.execute()).start(); // every hour
+    new CronJob("0 */1 * * *", () => fetchCourtResultsTask.execute()).start(); // every hour
 
     // Heartbeat
     heartbeat();
