@@ -97,12 +97,14 @@ export default class FetchCourtResultsTask extends Task {
 
             const listingId = result.insertId;
 
-            for (const offence of listing.offences) {
-                await mysql.execute(
-                    `INSERT INTO courtResultOffences (listingId, offence) VALUES (?, ?)
+            if (listingId > 0) {
+                for (const offence of listing.offences) {
+                    await mysql.execute(
+                        `INSERT INTO courtResultOffences (listingId, offence) VALUES (?, ?)
                      ON DUPLICATE KEY UPDATE offence = offence`,
-                    [listingId, offence]
-                );
+                        [listingId, offence]
+                    );
+                }
             }
         }
     }
