@@ -18,10 +18,10 @@ interface Listing {
 
 const DATA_URL = "https://tstgojcourtssa.blob.core.windows.net/court-listings/courtListsResults.json";
 
-export default class FetchCourtResultsTask extends Task {
+export default class FetchMagistratesCourtResultsTask extends Task {
 
     constructor() {
-        super("Fetch Court Results", "court-results");
+        super("Fetch Magistrates Court Results", "magistates-court-results");
     }
 
     protected async fetchData(): Promise<any> {
@@ -77,7 +77,7 @@ export default class FetchCourtResultsTask extends Task {
 
         for (const listing of data) {
             const result: any = await mysql.execute(
-                `INSERT INTO courtResults 
+                `INSERT INTO magistatesCourtResults 
                 (appearanceDate, video, hearingPurpose, result, remandedOrBailed, nextAppearanceDate, courtRoom, lawOfficer, defendant, magistrate)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE result = result`,
@@ -100,8 +100,7 @@ export default class FetchCourtResultsTask extends Task {
             if (listingId > 0) {
                 for (const offence of listing.offences) {
                     await mysql.execute(
-                        `INSERT INTO courtResultOffences (listingId, offence) VALUES (?, ?)
-                     ON DUPLICATE KEY UPDATE offence = offence`,
+                        `INSERT INTO magistratesCourtResultOffences (listingId, offence) VALUES (?, ?) ON DUPLICATE KEY UPDATE offence = offence`,
                         [listingId, offence]
                     );
                 }
